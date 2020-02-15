@@ -1,2 +1,2 @@
 # my-spark-amazonlinux
-spark + jupyter notebook on amazon linux
+spark + jupyter notebook with pyspark on amazon linux
