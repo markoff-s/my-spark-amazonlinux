@@ -1,0 +1,101 @@
+FROM mcr.microsoft.com/dotnet/core/aspnet:3.0-buster-slim AS base
+WORKDIR /app
+EXPOSE 80
+EXPOSE 443
+
+FROM mcr.microsoft.com/dotnet/core/sdk:3.0-buster AS build
+WORKDIR /src
+COPY ["WeatherService/WeatherService.csproj", "WeatherService/"]
+RUN dotnet restore "WeatherService/WeatherService.csproj"
+COPY . .
+WORKDIR "/src/WeatherService"
+RUN dotnet build "WeatherService.csproj" -c Release -o /app/build
+
+FROM build AS publish
+RUN dotnet publish "WeatherService.csproj" -c Release -o /app/publish
+
+FROM base AS final
+WORKDIR /app
+COPY --from=publish /app/publish .
+ENTRYPOINT ["dotnet", "WeatherService.dll"]
+
+
+####################### launch amazon linux 2 #######################
+
+# build docker image
+docker build -t my-spark-amazonlinux .
+
+# push docker image to docker hub
+docker login
+docker tag my-spark-amazonlinux:latest markoff/my-spark-amazonlinux:latest
+docker push markoff/my-spark-amazonlinux:latest
+
+# launch
+docker run -it -d -p 8888:8888 amazonlinux
+docker run -it -d -p 8888:8888 my-spark-amazonlinux
+
+# bash into running container
+docker exec -it [container id] sh
+
+# update yum
+yum update -y
+
+# install miniconda (python distro with addl sci/data packages)
+curl -O https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+sh ./Miniconda3-latest-Linux-x86_64.sh -b
+
+# install jupyter notebook
+/root/miniconda3/bin/conda install -y -c conda-forge notebook
+
+# install pandas
+/root/miniconda3/bin/pip install pandas
+
+# install java
+yum install -y java-1.8.0-openjdk
+
+# install proc utils such as ps/kill
+yum install -y procps
+# install tar
+yum install -y tar
+# install nano
+yum install -y nano
+
+# install spark
+mkdir /tools
+cd /tools
+curl -O http://mirrors.ocf.berkeley.edu/apache/spark/spark-2.4.5/spark-2.4.5-bin-hadoop2.7.tgz
+tar -xvzf spark-2.4.5-bin-hadoop2.7.tgz
+
+# add paths
+nano ~/.bash_profile
+    export SPARK_HOME="/tools/spark-2.4.5-bin-hadoop2.7"
+    # export PIP_HOME="~/.local"
+    export MINI_CONDA_HOME="/root/miniconda3"
+    
+    export PATH="$MINI_CONDA_HOME/bin:$SPARK_HOME/bin:$PATH"
+
+    # this is needed to launch notebook from pyspark
+    export PYSPARK_DRIVER_PYTHON=jupyter
+    export PYSPARK_DRIVER_PYTHON_OPTS='notebook --ip=0.0.0.0 --allow-root'
+
+# apply profile
+source ~/.bash_profile    
+
+# start jupyter notebook
+#jupyter notebook --ip=0.0.0.0 --allow-root
+# OR
+# start jupyter notebook with spark
+#pyspark
+
+#####################################################################
+
+####################### misc commands for amazon linux 2 #######################
+# install python
+yum install -y python37
+python3 --version
+
+# install pip
+curl -O https://bootstrap.pypa.io/get-pip.py
+python3 get-pip.py --user
+
+################################################################################
