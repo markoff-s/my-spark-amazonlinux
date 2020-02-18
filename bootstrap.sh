@@ -2,7 +2,9 @@ yum update -y && \
 curl -O https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh && \
 sh ./Miniconda3-latest-Linux-x86_64.sh -b && \
 /root/miniconda3/bin/conda install -y -c conda-forge notebook && \
-/root/miniconda3/bin/pip install pandas && \
+/root/miniconda3/bin/python -m pip install -U pip && \
+/root/miniconda3/bin/pip install -U pandas && \
+/root/miniconda3/bin/pip install -U matplotlib && \
 yum install -y java-1.8.0-openjdk && \
 yum install -y procps && \
 yum install -y tar && \
